@@ -173,15 +173,38 @@ def handle(message):
             bot.reply_to(message, error_msg)
 
 def run_bot():
-    """Run the bot in background"""
+    """Run the bot with better error handling"""
     print("🤖 Starting TikTok Bot...")
     load_stats()
-    try:
-        bot.infinity_polling(timeout=60, long_polling_timeout=60)
-    except Exception as e:
-        print(f"Bot error: {e}")
-        time.sleep(10)
-        run_bot()
+    
+    max_retries = 5
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            print(f"🔄 Attempt {retry_count + 1} to start bot...")
+            
+            # Use different polling parameters to avoid conflicts
+            bot.infinity_polling(
+                timeout=30, 
+                long_polling_timeout=30,
+                allowed_updates=['message', 'callback_query']
+            )
+            
+        except Exception as e:
+            print(f"❌ Bot error: {e}")
+            retry_count += 1
+            
+            if "409" in str(e) or "Conflict" in str(e):
+                print("🔄 Conflict detected - waiting longer before retry...")
+                time.sleep(30)  # Wait longer for conflict resolution
+            else:
+                print("🔄 Other error - waiting 10 seconds...")
+                time.sleep(10)
+            
+            if retry_count >= max_retries:
+                print("❌ Max retries reached. Bot stopped.")
+                break
 
 if __name__ == "__main__":
     # Start web server in thread
@@ -192,5 +215,5 @@ if __name__ == "__main__":
     web_thread.daemon = True
     web_thread.start()
     
-    # Start bot
+    # Start bot with better error handling
     run_bot()
