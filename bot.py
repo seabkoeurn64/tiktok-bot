@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "🤖 TikTok Bot is Running - Server Version!"
+    return "🤖 TikTok Bot is Running - Production Version!"
 
 @app.route('/health')
 def health():
@@ -77,18 +77,18 @@ def start(message):
     save_stats()
     
     help_text = """
-🤖 **TikTok Download Bot - Server Version**
+🤖 TikTok Download Bot
 
-📥 **វិធីប្រើ:**
+📥 វិធីប្រើ:
 1. ចូល TikTok App
 2. ចុច Share លើ video
 3. ចុច Copy Link
 4. ផ្ញើ Link មក bot នេះ
 
-🔗 **ឧទាហរណ៍:**
+🔗 ឧទាហរណ៍:
 https://www.tiktok.com/@username/video/123456789
 
-🏠 **Hosted on Render.com**
+
 📞 **Owner:** @koeurn65
     """
     bot.reply_to(message, help_text)
@@ -206,14 +206,29 @@ def run_bot():
                 print("❌ Max retries reached. Bot stopped.")
                 break
 
+def run_web_production():
+    """Run Flask in production mode"""
+    from waitress import serve
+    print("🚀 Starting production web server...")
+    serve(app, host='0.0.0.0', port=5000)
+
 if __name__ == "__main__":
-    # Start web server in thread
-    def run_web():
-        app.run(host='0.0.0.0', port=5000, debug=False)
+    # Choose between development and production server
+    use_production = True  # Set to False for development
     
-    web_thread = Thread(target=run_web)
-    web_thread.daemon = True
-    web_thread.start()
+    if use_production:
+        # Start production web server in thread
+        web_thread = Thread(target=run_web_production)
+        web_thread.daemon = True
+        web_thread.start()
+    else:
+        # Start development web server in thread
+        def run_web_dev():
+            app.run(host='0.0.0.0', port=5000, debug=False)
+        
+        web_thread = Thread(target=run_web_dev)
+        web_thread.daemon = True
+        web_thread.start()
     
     # Start bot with better error handling
     run_bot()
